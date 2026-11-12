@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Exponenta High-Pro — интерактивный ролик</title>
+<!-- Демо-страница креатива: счётчики отключены, просмотры и клики в статистику не попадают, переход ведёт сразу на сайт. -->
+<script>
+(function () {
+  var LANDING = 'https://exponenta.store/whey/detail/';
+  // счётчики креатива, которые в демо не нужны
+  var BLOCK = /(^|\.)weborama-tech\.ru$|^pixels\.getshop\.tv$|^vod-super\.getshop\.tv$|^voncat\.getshop\.tv$/i;
+  var blockedLog = window.__demoBlocked = [];
+  function hostOf(u) { try { return new URL(String(u), location.href).hostname; } catch (e) { return ''; } }
+  function isBlocked(u) { return BLOCK.test(hostOf(u)); }
+
+  // <img>-пиксели
+  var imgSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  Object.defineProperty(HTMLImageElement.prototype, 'src', {
+    configurable: true, enumerable: imgSrc.enumerable, get: imgSrc.get,
+    set: function (v) { if (isBlocked(v)) { blockedLog.push(String(v)); return; } imgSrc.set.call(this, v); }
+  });
+  var setAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, value) {
+    if (String(name).toLowerCase() === 'src' && isBlocked(value)) { blockedLog.push(String(value)); return; }
+    return setAttr.apply(this, arguments);
+  };
+
+  // fetch / sendBeacon
+  var origFetch = window.fetch;
+  window.fetch = function (input) {
+    var u = input && input.url ? input.url : input;
+    if (isBlocked(u)) {
+      blockedLog.push(String(u));
+      return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return origFetch.apply(this, arguments);
+  };
+  if (navigator.sendBeacon) {
+    var origBeacon = navigator.sendBeacon.bind(navigator);
+    navigator.sendBeacon = function (u) { if (isBlocked(u)) { blockedLog.push(String(u)); return true; } return origBeacon.apply(null, arguments); };
+  }
+
+  // переход — сразу на сайт, без счётчика клика
+  var origOpen = window.open;
+  window.open = function (u) {
+    if (u && isBlocked(u)) { blockedLog.push(String(u)); return origOpen.call(window, LANDING, '_blank', 'noopener'); }
+    return origOpen.apply(window, arguments);
+  };
+})();
+</script>
+<script src="https://common-cdn.getshop.tv/vod/prod/2026-11-lotus-exponenta/vpaid.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh; background: #0d1117; color: #e6e9ef;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: 100%; max-width: 1312px; padding: 24px 16px 32px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: #9aa3b2; margin: 0 0 18px; font-size: 14px; }
+  #stage { position: relative; width: 100%; max-width: 1280px; aspect-ratio: 16 / 9; background: #000; overflow: hidden; border-radius: 10px; }
+  #videoSlot, #adSlot { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #videoSlot { background: #000; }
+  .cover {
+    position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; gap: 14px;
+    align-items: center; justify-content: center; background: rgba(0, 0, 0, .72); text-align: center; padding: 16px;
+  }
+  .cover[hidden] { display: none; }
+  .btn {
+    appearance: none; border: 0; border-radius: 999px; cursor: pointer;
+    background: #fff; color: #0d1117; font: 600 17px/1 inherit; padding: 16px 28px;
+  }
+  .btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 3px; }
+  .cover p { margin: 0; color: #c9d0db; font-size: 14px; max-width: 520px; }
+  .hint { margin: 16px 0 0; color: #9aa3b2; font-size: 14px; max-width: 900px; }
+  .hint b { color: #e6e9ef; font-weight: 600; }
+  .kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border: 1px solid #3a4352; border-radius: 5px; font-size: 12px; text-align: center; color: #e6e9ef; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Exponenta High-Pro — интерактивный ролик</h1>
+  <p class="sub">Демо-версия для просмотра. Креатив тот же, что в эфире. Показы и клики на этой странице в статистику не идут.</p>
+
+  <div id="stage">
+    <video id="videoSlot" playsinline></video>
+    <div id="adSlot"></div>
+    <div class="cover" id="startCover">
+      <button class="btn" id="startBtn">▶ Смотреть ролик</button>
+      <p>Ролик со звуком, 20 секунд</p>
+    </div>
+    <div class="cover" id="loadingCover" hidden><p>Загрузка…</p></div>
+    <div class="cover" id="endCover" hidden>
+      <button class="btn" id="againBtn">↻ Посмотреть ещё раз</button>
+      <p hidden>Ролик не загрузился — нажмите, чтобы попробовать снова.</p>
+    </div>
+  </div>
+
+  <p class="hint">
+    Пока идёт ролик, с ним можно взаимодействовать: <b>наведите курсор или нажмите на карточку</b>, листайте карточки стрелками
+    <span class="kbd">←</span> <span class="kbd">→</span>, кнопка в ролике открывает сайт exponenta.store в новой вкладке.
+    На Smart TV то же самое делается пультом: стрелки и <span class="kbd">OK</span>.
+  </p>
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var adSlot = document.getElementById('adSlot');
+  var videoSlot = document.getElementById('videoSlot');
+  var startCover = document.getElementById('startCover');
+  var loadingCover = document.getElementById('loadingCover');
+  var endCover = document.getElementById('endCover');
+  var vpaid = null, started = false, finished = false;
+
+  function size() { return [Math.round(stage.clientWidth), Math.round(stage.clientHeight)]; }
+  function finish() {
+    if (finished) return;
+    finished = true;
+    loadingCover.hidden = true;
+    // ролик так и не пошёл (сбой CDN, сеть) — честно говорим и даём перезапуск
+    if (videoSlot.currentTime < 1) endCover.querySelector('p').hidden = false;
+    endCover.hidden = false;
+  }
+
+  function start() {
+    startCover.hidden = true;
+    loadingCover.hidden = false;
+    if (typeof window.getVPAIDAd !== 'function') {
+      loadingCover.innerHTML = '<p>Креатив не загрузился. Проверьте подключение к интернету и обновите страницу.</p>';
+      return;
+    }
+    vpaid = window.getVPAIDAd();
+    vpaid.subscribe(function () { loadingCover.hidden = true; started = true; vpaid.startAd(); }, 'AdLoaded');
+    vpaid.subscribe(finish, 'AdStopped');
+    vpaid.subscribe(finish, 'AdSkipped');
+    vpaid.subscribe(function (e) { console.warn('AdError', e); finish(); }, 'AdError');
+
+    var wh = size();
+    vpaid.initAd(wh[0], wh[1], 'normal', 0,
+      { AdParameters: JSON.stringify({ EXPAND_BUTTON_KEY_CODE: 13, displayErid: false, ycp: 'demo' }) },
+      { slot: adSlot, videoSlot: videoSlot, videoSlotCanAutoPlay: true });
+  }
+
+  document.getElementById('startBtn').addEventListener('click', start);
+  document.getElementById('againBtn').addEventListener('click', function () { location.reload(); });
+
+  new ResizeObserver(function () {
+    if (vpaid && started && !finished) { var wh = size(); try { vpaid.resizeAd(wh[0], wh[1], 'normal'); } catch (e) {} }
+  }).observe(stage);
+
+  document.addEventListener('visibilitychange', function () {
+    if (!vpaid || !started || finished) return;
+    try { document.hidden ? vpaid.pauseAd() : vpaid.resumeAd(); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
