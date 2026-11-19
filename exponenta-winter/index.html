@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#001A4D">
+<title>Exponenta — зимний интерактивный ролик · Lotus DSP</title>
+<!-- Демо-страница креатива: счётчики отключены, просмотры и клики в статистику не попадают, переход ведёт сразу на сайт. -->
+<script>
+(function () {
+  var LANDING = 'https://exponenta.store/whey/detail/';
+  // счётчики креатива, которые в демо не нужны
+  var BLOCK = /(^|\.)weborama-tech\.ru$|^pixels\.getshop\.tv$|^vod-super\.getshop\.tv$|^voncat\.getshop\.tv$/i;
+  var blockedLog = window.__demoBlocked = [];
+  function hostOf(u) { try { return new URL(String(u), location.href).hostname; } catch (e) { return ''; } }
+  function isBlocked(u) { return BLOCK.test(hostOf(u)); }
+
+  // <img>-пиксели
+  var imgSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  Object.defineProperty(HTMLImageElement.prototype, 'src', {
+    configurable: true, enumerable: imgSrc.enumerable, get: imgSrc.get,
+    set: function (v) { if (isBlocked(v)) { blockedLog.push(String(v)); return; } imgSrc.set.call(this, v); }
+  });
+  // стили креатива — по адресу с версией: CDN getshop после перевыкладки какое-то время отдаёт старый index.css,
+  // а браузер кэширует его на 10 минут — раскладка креатива тогда разваливается
+  var ASSET_VER = '20261119';
+  function fresh(u) { var s = String(u); return /getshop\.tv\/.*\/index\.css$/i.test(s) ? s + '?v=' + ASSET_VER : s; }
+  var linkHref = Object.getOwnPropertyDescriptor(HTMLLinkElement.prototype, 'href');
+  Object.defineProperty(HTMLLinkElement.prototype, 'href', {
+    configurable: true, enumerable: linkHref.enumerable, get: linkHref.get,
+    set: function (v) { linkHref.set.call(this, fresh(v)); }
+  });
+  var setAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, value) {
+    var n = String(name).toLowerCase();
+    if (n === 'src' && isBlocked(value)) { blockedLog.push(String(value)); return; }
+    if (n === 'href' && this instanceof HTMLLinkElement) { return setAttr.call(this, name, fresh(value)); }
+    return setAttr.apply(this, arguments);
+  };
+
+  // fetch / sendBeacon
+  var origFetch = window.fetch;
+  window.fetch = function (input) {
+    var u = input && input.url ? input.url : input;
+    if (isBlocked(u)) {
+      blockedLog.push(String(u));
+      return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return origFetch.apply(this, arguments);
+  };
+  if (navigator.sendBeacon) {
+    var origBeacon = navigator.sendBeacon.bind(navigator);
+    navigator.sendBeacon = function (u) { if (isBlocked(u)) { blockedLog.push(String(u)); return true; } return origBeacon.apply(null, arguments); };
+  }
+
+  // переход — сразу на сайт, без счётчика клика
+  var origOpen = window.open;
+  window.open = function (u) {
+    if (u && isBlocked(u)) { blockedLog.push(String(u)); return origOpen.call(window, LANDING, '_blank', 'noopener'); }
+    return origOpen.apply(window, arguments);
+  };
+})();
+</script>
+<script src="https://common-cdn.getshop.tv/vod/prod/2026-11-lotus-exponenta-winter/vpaid.js?v=20261119"></script>
+<style>
+  :root {
+    --navy: #002466; --navy-deep: #001A4D; --blue: #0B8CE0; --sky: #75C1EF;
+    --header-h: 76px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+    color: #fff; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background-color: var(--navy-deep);
+    background-image:
+      radial-gradient(60vw 50vh at 12% -8%, rgba(11, 140, 224, .42), transparent 70%),
+      radial-gradient(55vw 55vh at 105% 108%, rgba(117, 193, 239, .26), transparent 70%),
+      radial-gradient(40vw 40vh at 85% 10%, rgba(11, 140, 224, .14), transparent 70%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 55%, #00143c 100%);
+    background-attachment: fixed;
+  }
+  header {
+    height: var(--header-h); flex: none;
+    display: flex; align-items: center;
+    width: 100%; max-width: 1312px; margin: 0 auto; padding: 0 16px;
+  }
+  header a { display: inline-flex; opacity: .95; transition: opacity .2s; }
+  header a:hover { opacity: 1; }
+  .logo { height: 30px; width: auto; display: block; }
+  main {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 0 16px calc(var(--header-h) / 2 + 8px);
+  }
+  #stage {
+    position: relative; aspect-ratio: 16 / 9;
+    width: min(1280px, 100%, calc((100vh - var(--header-h) * 1.5 - 24px) * 16 / 9));
+    min-width: min(100%, 320px);
+    background: #000; overflow: hidden; border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 30px 80px -20px rgba(0, 8, 32, .75), 0 0 120px -30px rgba(11, 140, 224, .45);
+  }
+  #videoSlot, #adSlot { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #videoSlot { background: #000; }
+  .cover {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center;
+    text-align: center; padding: 16px;
+  }
+  .cover[hidden] { display: none; }
+  #startCover {
+    cursor: pointer;
+    background: linear-gradient(180deg, rgba(0, 26, 77, .10), rgba(0, 26, 77, .45)), url("poster.jpg") center / cover no-repeat #0b1a3a;
+  }
+  .play {
+    appearance: none; border: 0; cursor: pointer; padding: 0;
+    width: 88px; height: 88px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 10px rgba(11, 140, 224, .25), 0 12px 40px rgba(0, 20, 60, .45);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .play svg { width: 34px; height: 34px; margin-left: 6px; }
+  #startCover:hover .play { transform: scale(1.06); box-shadow: 0 0 0 14px rgba(11, 140, 224, .28), 0 14px 44px rgba(0, 20, 60, .5); }
+  .play:focus-visible, .btn:focus-visible { outline: 3px solid var(--sky); outline-offset: 4px; }
+  #loadingCover { background: rgba(0, 20, 60, .35); }
+  .spinner {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, .25); border-top-color: #fff;
+    animation: spin .9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #endCover { background: rgba(0, 26, 77, .55); backdrop-filter: blur(2px); }
+  .btn {
+    appearance: none; border: 0; border-radius: 999px; cursor: pointer;
+    background: #fff; color: var(--navy); font: 600 16px/1 inherit; padding: 15px 26px;
+  }
+  .cover p { margin: 0; color: rgba(255, 255, 255, .85); font-size: 14px; max-width: 420px; }
+  @media (max-width: 600px) {
+    :root { --header-h: 60px; }
+    .logo { height: 24px; }
+    #stage { border-radius: 12px; }
+    .play { width: 64px; height: 64px; box-shadow: 0 0 0 7px rgba(11, 140, 224, .25), 0 10px 30px rgba(0, 20, 60, .45); }
+    .play svg { width: 26px; height: 26px; margin-left: 4px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="https://lotus-dsp.ru" target="_blank" rel="noopener"><svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3280 652.4" role="img" aria-label="Lotus DSP" fill="#fff"> <path d="M2539.6,542.5c-32.3,0-72.2-3.1-119.8-9.4v-62c59,9,99.3,13.5,120.9,13.5c45.1,0,67.7-11.6,67.7-34.9v-21.9 c0-11.1-3.3-19.6-9.9-25.5c-6.3-5.9-17.7-8.9-34.4-8.9h-39.6c-74.3,0-111.5-29.5-111.5-88.6v-25c0-29.5,12.3-51.2,37-65.1 s63.7-20.8,117.2-20.8c27.8,0,63,2.3,105.7,6.8v60.4c-52.4-6.3-88.6-9.4-108.4-9.4c-27.4,0-45.8,2.3-55.2,6.8 c-10.1,4.9-15.1,12.5-15.1,22.9v24c0,17.7,14.9,26.6,44.8,26.6h40.6c38.5,0,66.5,7.1,83.9,21.4c17.4,14.2,26,35.9,26,65.1v22.4 c0,40.3-14.4,67.5-43.2,81.8c-13.9,7.3-29.3,12.3-46.4,15.1C2583.4,540.9,2563.3,542.5,2539.6,542.5z M2211.3,542.5 c-97.6,0-146.4-32.6-146.4-97.9V199.2h81.3v245.4c0,15.3,4.9,25.9,14.6,31.8c10.1,5.6,27.3,8.3,51.6,8.3c24,0,40.6-2.8,50-8.3 c9.7-5.9,14.6-16.5,14.6-31.8V199.2h81.3v245.4C2358.2,509.8,2309.3,542.5,2211.3,542.5z M1834.3,257h-104.2v-57.8h289.1V257h-103.7 v280.3h-81.3L1834.3,257L1834.3,257z M1530.9,484.7c11.5,0,21-0.3,28.7-1c8-1,16.1-2.8,24.5-5.2c8.3-2.4,14.6-6.4,18.8-12 c4.5-5.9,6.8-13.2,6.8-21.9V296.1c0-16-6.4-27.3-19.3-33.9c-12.8-6.9-32.8-10.4-59.9-10.4s-47.1,3.3-59.9,9.9 c-12.8,6.6-19.3,18.1-19.3,34.4v148.5c0,8.7,2.3,16,6.8,21.9c4.5,5.6,11.1,9.5,19.8,12c8.3,2.4,16.3,4.2,24,5.2 C1509.7,484.3,1519.4,484.7,1530.9,484.7z M1529.8,542.5c-18.8,0-36.1-1.2-52.1-3.6c-15.6-2.4-32-6.6-49-12.5 c-18.4-6.3-32.8-16.3-43.2-30.2c-10.4-14.2-15.6-31.4-15.6-51.6v-148c0-16.7,3.6-31.6,10.9-44.8c7.6-13.2,17.4-23.6,29.2-31.3 c10.4-6.6,23.3-12.2,38.5-16.7c15.3-4.5,29.5-7.3,42.7-8.3c12.2-1,25-1.6,38.5-1.6c16,0,29.9,0.7,41.7,2.1c11.8,1,25,3.5,39.6,7.3 c16.7,4.9,30.4,10.8,41.2,17.7c10.8,6.9,19.8,16.7,27.1,29.2c7.6,12.8,11.5,28.3,11.5,46.4v147.9c0,18.8-5,34.9-15.1,48.4 c-9.7,13.5-23.3,23.8-40.6,30.7C1603.8,536.2,1568.7,542.5,1529.8,542.5z M1075,199.2h81.3v280.3h166.2v57.8H1075V199.2z"></path> <path d="M3218.3,291.3c11.1,0,20-2,26.6-6.1c6.7-4,10-10.5,10-19.3v-31.1c0-4.7-1.2-8.6-3.7-11.6 c-2.5-3.2-6-5.4-10.6-6.6c-4.4-1.1-8.1-1.8-11.1-2.1c-3-0.4-6.9-0.5-11.9-0.5H3189v77.3L3218.3,291.3L3218.3,291.3z M3163.7,198 h55.9c7.9,0,14.2,0.2,19,0.5c4.9,0.4,10.1,1.1,15.6,2.4c5.6,1.2,10.1,3.1,13.5,5.5c3.5,2.5,6.5,5.8,9,10c2.3,4,3.4,9.1,3.4,15.3 v35.6c0,14.2-5.5,24.5-16.6,30.9c-10.9,6.2-27.1,9.2-48.5,9.2h-25.6v61.7h-25.6L3163.7,198L3163.7,198z M3062.8,371.8 c-14.6,0-32-1.4-52.2-4.2v-21.4c20.4,4.4,38.3,6.6,53.8,6.6c13,0,22.5-1.4,28.5-4.2c6-3,9-8.4,9-16.4V310c0-7.4-2.1-12.6-6.3-15.6 s-11.6-4.5-22.2-4.5h-20c-16.7,0-28.6-3.3-35.6-10s-10.6-17.1-10.6-31.1v-13.7c0-9.3,2-16.9,6.1-22.7c4.2-5.8,11.2-10.1,20.8-12.9 c9.8-2.8,23.3-4.2,40.4-4.2c11.4,0,26.1,1,44,2.9v19.3c-20-3-35.3-4.5-45.9-4.5c-16.4,0-27.2,1.6-32.4,4.7 c-5.5,3.3-8.2,8.9-8.2,16.6v19.5c0,6,2.1,10.4,6.3,13.2c4.4,2.6,11.9,4,22.4,4h20.6c11.8,0,20.9,1.4,27.4,4.2 c6.7,2.8,11.3,7.1,14,12.9c2.8,5.6,4.2,13.3,4.2,22.9v12.5c0,12.1-2.3,21.7-6.9,28.7c-4.4,7-11.3,12-20.6,15 C3090.2,370.3,3078,371.8,3062.8,371.8z M2901,351.7c32.7,0,49.1-9.8,49.1-29.5v-75.4c0-6.3-1.3-11.7-4-16.1 c-2.6-4.4-6.3-7.6-11.1-9.8c-4.7-1.9-9.7-3.3-14.8-4c-5.1-0.9-11.1-1.3-17.9-1.3h-42.2v136.1H2901z M2834.5,198h68.1 c48,0,72,16.4,72,49.1v75.7c0,30.9-23.9,46.4-71.7,46.4h-68.3V198H2834.5z"></path> <path d="M816.3,365.6c0,121.2-91.9,221.3-209.6,234.5C691.2,543.9,747,447.8,747,338.9v-85 c21.6-9.5,44.9-15.9,69.3-18.5L816.3,365.6L816.3,365.6z M459,600.4V454c0-136.3,104.3-248.6,237.3-261.4v146.3 C696.2,475.2,591.9,587.5,459,600.4z M333.2,203.1c12.2-32.1,31.1-62.2,56.9-88l43.4-43.4l43.4,43.4c25.8,25.8,44.8,55.9,56.9,88 c-43.7,32.7-78.5,76.6-100.3,127.3C411.7,279.7,376.9,235.9,333.2,203.1z M408.2,600.4c-133-12.8-237.3-125.2-237.3-261.4V192.6 c133,12.8,237.3,125.2,237.3,261.4V600.4z M50.8,365.6V235.4c24.4,2.6,47.7,9,69.3,18.5v85c0,108.9,55.8,205,140.3,261.2 C142.7,586.9,50.8,486.8,50.8,365.6z M841.7,183.3c-33.2,0-65,5.7-94.7,16.1v-58.8h-25.4c-51.9,0-100.8,12.7-144,35.1 c-14.7-35.1-36.3-67.9-64.8-96.4L433.5,0l-79.3,79.3c-28.5,28.5-50.1,61.3-64.8,96.4c-43.1-22.4-92.1-35.1-144-35.1H120v58.8 c-29.7-10.4-61.5-16.1-94.7-16.1H0v182.3c0,158.1,128.6,286.8,286.8,286.8h293.6c158.1,0,286.8-128.6,286.8-286.8V183.3H841.7z"></path> </svg></a>
+</header>
+
+<main>
+  <div id="stage">
+    <video id="videoSlot" playsinline></video>
+    <div id="adSlot"></div>
+    <div class="cover" id="startCover">
+      <button class="play" id="startBtn" aria-label="Смотреть ролик">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4.5v15a1 1 0 0 0 1.52.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+      </button>
+    </div>
+    <div class="cover" id="loadingCover" hidden><div class="spinner" aria-label="Загрузка"></div></div>
+    <div class="cover" id="endCover" hidden>
+      <button class="btn" id="againBtn">↻ Посмотреть ещё раз</button>
+      <p hidden>Ролик не загрузился — нажмите, чтобы попробовать снова.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var adSlot = document.getElementById('adSlot');
+  var videoSlot = document.getElementById('videoSlot');
+  var startCover = document.getElementById('startCover');
+  var loadingCover = document.getElementById('loadingCover');
+  var endCover = document.getElementById('endCover');
+  var vpaid = null, started = false, finished = false;
+
+  function size() { return [Math.round(stage.clientWidth), Math.round(stage.clientHeight)]; }
+  function finish() {
+    if (finished) return;
+    finished = true;
+    loadingCover.hidden = true;
+    // ролик так и не пошёл (сбой CDN, сеть) — честно говорим и даём перезапуск
+    if (videoSlot.currentTime < 1) endCover.querySelector('p').hidden = false;
+    endCover.hidden = false;
+  }
+
+  function start() {
+    if (vpaid) return;
+    startCover.hidden = true;
+    loadingCover.hidden = false;
+
+    if (typeof window.getVPAIDAd !== 'function') {
+      loadingCover.innerHTML = '<p>Креатив не загрузился. Проверьте подключение к интернету и обновите страницу.</p>';
+      return;
+    }
+    vpaid = window.getVPAIDAd();
+    vpaid.subscribe(function () { loadingCover.hidden = true; started = true; vpaid.startAd(); }, 'AdLoaded');
+    vpaid.subscribe(finish, 'AdStopped');
+    vpaid.subscribe(finish, 'AdSkipped');
+    vpaid.subscribe(function (e) { console.warn('AdError', e); finish(); }, 'AdError');
+
+    var wh = size();
+    vpaid.initAd(wh[0], wh[1], 'normal', 0,
+      { AdParameters: JSON.stringify({ EXPAND_BUTTON_KEY_CODE: 13, displayErid: false, ycp: 'demo' }) },
+      { slot: adSlot, videoSlot: videoSlot, videoSlotCanAutoPlay: true });
+  }
+
+  startCover.addEventListener('click', start);
+  document.getElementById('againBtn').addEventListener('click', function () { location.reload(); });
+
+  new ResizeObserver(function () {
+    if (vpaid && started && !finished) { var wh = size(); try { vpaid.resizeAd(wh[0], wh[1], 'normal'); } catch (e) {} }
+  }).observe(stage);
+
+  document.addEventListener('visibilitychange', function () {
+    if (!vpaid || !started || finished) return;
+    try { document.hidden ? vpaid.pauseAd() : vpaid.resumeAd(); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
