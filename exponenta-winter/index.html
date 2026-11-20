@@ -24,7 +24,7 @@
   });
   // стили креатива — по адресу с версией: CDN getshop после перевыкладки какое-то время отдаёт старый index.css,
   // а браузер кэширует его на 10 минут — раскладка креатива тогда разваливается
-  var ASSET_VER = '20261119';
+  var ASSET_VER = '20261120';
   function fresh(u) { var s = String(u); return /getshop\.tv\/.*\/index\.css$/i.test(s) ? s + '?v=' + ASSET_VER : s; }
   var linkHref = Object.getOwnPropertyDescriptor(HTMLLinkElement.prototype, 'href');
   Object.defineProperty(HTMLLinkElement.prototype, 'href', {
@@ -54,15 +54,15 @@
     navigator.sendBeacon = function (u) { if (isBlocked(u)) { blockedLog.push(String(u)); return true; } return origBeacon.apply(null, arguments); };
   }
 
-  // переход — сразу на сайт, без счётчика клика
+  // переход — сразу на сайт, без счётчика клика (в staging-сборке getads клик ведёт на заглушку example.com)
   var origOpen = window.open;
   window.open = function (u) {
-    if (u && isBlocked(u)) { blockedLog.push(String(u)); return origOpen.call(window, LANDING, '_blank', 'noopener'); }
+    if (u && (isBlocked(u) || /(^|\.)example\.com$/i.test(hostOf(u)))) { blockedLog.push(String(u)); return origOpen.call(window, LANDING, '_blank', 'noopener'); }
     return origOpen.apply(window, arguments);
   };
 })();
 </script>
-<script src="https://common-cdn.getshop.tv/vod/prod/2026-11-lotus-exponenta-winter/vpaid.js?v=20261119"></script>
+<script src="https://da-cdn.getshop.tv/vod/staging/2026-11-lotus-exponenta-winter/vpaid.js?v=20261120"></script>
 <style>
   :root {
     --navy: #002466; --navy-deep: #001A4D; --blue: #0B8CE0; --sky: #75C1EF;
