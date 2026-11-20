@@ -7,15 +7,9 @@
 <meta name="theme-color" content="#001A4D">
 <title>Exponenta — зимний интерактивный ролик · Lotus DSP</title>
 <!-- Демо-страница креатива: счётчики отключены, просмотры и клики в статистику не попадают, переход ведёт сразу на сайт. -->
-<!-- Режим записи экрана: ?rec — квадрат 1:1, ?rec=16x9 — 16:9; без шапки, скруглений и тени, вокруг пунктир-ориентир для выделения. -->
+<!-- Режим записи экрана ?rec: тот же кадр 16:9, но без шапки, скруглений и тени, вокруг пунктир-ориентир для выделения. -->
 <script>
-(function () {
-  var m = /[?&]rec(?:=([^&]*))?(?:&|$)/.exec(location.search);
-  if (!m) return;
-  var root = document.documentElement;
-  root.classList.add('rec');
-  if (m[1] === '16x9') root.classList.add('rec-wide');
-})();
+if (/[?&]rec(=|&|$)/.test(location.search)) document.documentElement.classList.add('rec');
 </script>
 <script>
 (function () {
@@ -152,13 +146,9 @@
   html.rec header { display: none; }
   html.rec main { flex-direction: column; gap: 18px; padding: 24px 16px; }
   html.rec #stage {
-    aspect-ratio: 1 / 1; border-radius: 0; box-shadow: none; min-width: 0;
-    width: min(100vw - 48px, 100vh - 92px); width: min(100vw - 48px, 100dvh - 92px);
-    outline: 1px dashed rgba(255, 255, 255, .45); outline-offset: 8px;
-  }
-  html.rec-wide #stage {
-    aspect-ratio: 16 / 9;
+    border-radius: 0; box-shadow: none; min-width: 0;
     width: min(100vw - 48px, (100vh - 92px) * 16 / 9); width: min(100vw - 48px, (100dvh - 92px) * 16 / 9);
+    outline: 1px dashed rgba(255, 255, 255, .45); outline-offset: 8px;
   }
   html.rec #recInfo {
     display: block; margin: 0; color: rgba(255, 255, 255, .6); font-size: 13px; text-align: center;
