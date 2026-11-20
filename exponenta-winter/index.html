@@ -7,6 +7,16 @@
 <meta name="theme-color" content="#001A4D">
 <title>Exponenta — зимний интерактивный ролик · Lotus DSP</title>
 <!-- Демо-страница креатива: счётчики отключены, просмотры и клики в статистику не попадают, переход ведёт сразу на сайт. -->
+<!-- Режим записи экрана: ?rec — квадрат 1:1, ?rec=16x9 — 16:9; без шапки, скруглений и тени, вокруг пунктир-ориентир для выделения. -->
+<script>
+(function () {
+  var m = /[?&]rec(?:=([^&]*))?(?:&|$)/.exec(location.search);
+  if (!m) return;
+  var root = document.documentElement;
+  root.classList.add('rec');
+  if (m[1] === '16x9') root.classList.add('rec-wide');
+})();
+</script>
 <script>
 (function () {
   var LANDING = 'https://exponenta.store/whey/detail/';
@@ -137,6 +147,23 @@
     background: #fff; color: var(--navy); font: 600 16px/1 inherit; padding: 15px 26px;
   }
   .cover p { margin: 0; color: rgba(255, 255, 255, .85); font-size: 14px; max-width: 420px; }
+  /* режим записи экрана */
+  #recInfo { display: none; }
+  html.rec header { display: none; }
+  html.rec main { flex-direction: column; gap: 18px; padding: 24px 16px; }
+  html.rec #stage {
+    aspect-ratio: 1 / 1; border-radius: 0; box-shadow: none; min-width: 0;
+    width: min(100vw - 48px, 100vh - 92px); width: min(100vw - 48px, 100dvh - 92px);
+    outline: 1px dashed rgba(255, 255, 255, .45); outline-offset: 8px;
+  }
+  html.rec-wide #stage {
+    aspect-ratio: 16 / 9;
+    width: min(100vw - 48px, (100vh - 92px) * 16 / 9); width: min(100vw - 48px, (100dvh - 92px) * 16 / 9);
+  }
+  html.rec #recInfo {
+    display: block; margin: 0; color: rgba(255, 255, 255, .6); font-size: 13px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
   @media (max-width: 600px) {
     :root { --header-h: 60px; }
     .logo { height: 24px; }
@@ -166,6 +193,7 @@
       <p hidden>Ролик не загрузился — нажмите, чтобы попробовать снова.</p>
     </div>
   </div>
+  <p id="recInfo"></p>
 </main>
 
 <script>
@@ -212,8 +240,13 @@
   startCover.addEventListener('click', start);
   document.getElementById('againBtn').addEventListener('click', function () { location.reload(); });
 
+  var recInfo = document.getElementById('recInfo');
   new ResizeObserver(function () {
-    if (vpaid && started && !finished) { var wh = size(); try { vpaid.resizeAd(wh[0], wh[1], 'normal'); } catch (e) {} }
+    var wh = size();
+    if (vpaid && started && !finished) { try { vpaid.resizeAd(wh[0], wh[1], 'normal'); } catch (e) {} }
+    if (document.documentElement.classList.contains('rec')) {
+      recInfo.textContent = 'Кадр ' + wh[0] + ' × ' + wh[1] + ' — выделите область внутри пунктира: ⇧⌘5 → «Записать выбранную область»';
+    }
   }).observe(stage);
 
   document.addEventListener('visibilitychange', function () {
